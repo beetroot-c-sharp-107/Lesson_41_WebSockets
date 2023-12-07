@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple WebSocket Chat</title>
+    <style>
+        .main {
+            width: 72rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #message-form {
+            position: fixed;
+            bottom: 0;
+            padding: 1rem;
+        }
+
+        #chat-history {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message-item {
+            border-bottom: 1px solid grey;
+        }
+
+        .message-item > .message-title {
+            font-size: 1.25rem;
+            font-weight: bolder;
+        }
+
+        .message-item > .message-text {
+            font-size: 1rem;
+        }
+    </style>
+    <script>
+        function addItemToChatHistory(title, text) {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message-item");
+            if (!!title) {
+                const titleElement = document.createElement("h2");
+                titleElement.classList.add("message-title");
+                titleElement.innerText = title;
+                messageElement.appendChild(titleElement);
+            }
+            if (!!text) {
+                const textElement = document.createElement("p");
+                textElement.classList.add("message-text");
+                textElement.innerText = text;
+                messageElement.appendChild(textElement);
+            }
+            document.getElementById("chat-history").appendChild(messageElement);
+            window.scroll(0, document.body.scrollHeight);
+        }
+
+        document.addEventListener("DOMContentLoaded", function (ev) {
+            const ws = new WebSocket("ws://localhost:5059/websocket");
+            ws.onopen = () => {
+                addItemToChatHistory("Successfully connected...");
+            };
+            ws.onclose = () => {
+                addItemToChatHistory("Disconnected...");
+            };
+            ws.onmessage = (e) => {
+                const message = JSON.parse(e.data);
+                console.log(message);
+                addItemToChatHistory(message.name, message.text);
+            }
+            document.getElementById("send-button").addEventListener("click", function (e) {
+                const message = new FormData(document.getElementById("message-form"));
+                ws.send(JSON.stringify({ name: message.get("name"), text: message.get("text") }));
+            })
+        });
+    </script>
+</head>
+<body>
+    <div class="main">
+        <div id="chat-history">
+        </div>
+        <form id="message-form">
+            <label for="name">User name: </label>
+            <input id="name" name="name" type="text" required />
+            <label for="text">Message: </label>
+            <input id="text" name="text" type="text" required multiple />
+            <button id="send-button" type="button">Send</button>
+        </form>
+    </div>
+</body>
+</html>
